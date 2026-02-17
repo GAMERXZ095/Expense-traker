@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FinanceKit</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ════════════════════════════════════════════════
+           🎨 APPLE DESIGN SYSTEM & CSS VARIABLES
+           ════════════════════════════════════════════════ */
+        :root {
+            /* Palette */
+            --bg-body: #000000;
+            --bg-card: #1C1C1E;
+            --bg-card-secondary: #2C2C2E;
+            --bg-input: #3A3A3C;
+            --separator: rgba(255, 255, 255, 0.12);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-tertiary: rgba(255, 255, 255, 0.3);
+            
+            /* Accents */
+            --blue: #0A84FF;
+            --green: #30D158;
+            --orange: #FF9F0A;
+            --red: #FF453A;
+            --purple: #BF5AF2;
+            --teal: #64D2FF;
+            --pink: #FF375F;
+            
+            /* Dimensions */
+            --radius-l: 16px;
+            --radius-m: 12px;
+            --radius-s: 8px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+            --tab-bar-height: 83px;
+            --sidebar-width: 260px;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #F2F2F7;
+            --bg-card: #FFFFFF;
+            --bg-card-secondary: #F2F2F7;
+            --bg-input: #E5E5EA;
+            --separator: rgba(60, 60, 67, 0.12);
+            --text-primary: #000000;
+            --text-secondary: rgba(60, 60, 67, 0.6);
+            --text-tertiary: rgba(60, 60, 67, 0.3);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: none; /* Prevent rubber banding on body */
+        }
+
+        /* ════════════════════════════════════════════════
+           📱 LAYOUT & UTILITIES
+           ════════════════════════════════════════════════ */
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 20px calc(var(--tab-bar-height) + 20px) 20px;
+            position: relative;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .flex-row { display: flex; align-items: center; justify-content: space-between; }
+        .flex-col { display: flex; flex-direction: column; }
+        .text-center { text-align: center; }
+        
+        /* Typography */
+        h1 { font-size: 34px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: -0.02em; }
+        h2 { font-size: 22px; font-weight: 600; margin: 20px 0 10px 0; letter-spacing: -0.01em; }
+        h3 { font-size: 17px; font-weight: 600; margin: 0; }
+        .subtitle { color: var(--text-secondary); font-size: 17px; font-weight: 400; }
+        .caption { font-size: 13px; color: var(--text-secondary); }
+        .section-header {
+            font-size: 13px; text-transform: uppercase; color: var(--text-secondary);
+            margin: 24px 0 8px 16px; letter-spacing: 0.05em; font-weight: 500;
+        }
+
+        /* ════════════════════════════════════════════════
+           🧩 COMPONENTS
+           ════════════════════════════════════════════════ */
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-l);
+            padding: 16px;
+            margin-bottom: 16px;
+            /* backdrop-filter: blur(20px); - Performance heavy, used sparingly */
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:active { transform: scale(0.98); }
+
+        /* Buttons */
+        .btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-m);
+            height: 50px;
+            font-size: 17px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); opacity: 0.8; }
+        .btn-secondary { background: var(--bg-card-secondary); color: var(--blue); }
+        .btn-danger { background: var(--bg-card-secondary); color: var(--red); }
+        .btn-icon { width: 44px; height: 44px; background: transparent; color: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; border-radius: 50%;}
+        .fab {
+            position: fixed; bottom: calc(var(--tab-bar-height) + 20px); right: 20px;
+            width: 56px; height: 56px; border-radius: 28px; background: var(--blue);
+            color: white; font-size: 30px; box-shadow: 0 4px 12px rgba(10,132,255,0.3);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Inputs */
+        input, select, textarea {
+            background: var(--bg-input);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-primary);
+            padding: 12px 16px;
+            font-size: 17px;
+            width: 100%;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+        input:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+
+        /* Lists */
+        .list-group { background: var(--bg-card); border-radius: var(--radius-l); overflow: hidden; }
+        .list-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; min-height: 44px;
+            border-bottom: 1px solid var(--separator);
+            background: var(--bg-card);
+        }
+        .list-item:last-child { border-bottom: none; }
+        .chevron::after { content: '›'; font-size: 22px; color: var(--text-tertiary); margin-left: 10px; }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            appearance: none; width: 51px; height: 31px;
+            background: var(--bg-input); border-radius: 15.5px;
+            position: relative; transition: 0.3s; cursor: pointer;
+        }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 27px; height: 27px; background: white;
+            border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch:checked { background: var(--green); }
+        .toggle-switch:checked::after { transform: translateX(20px); }
+
+        /* Progress Bar */
+        .progress-track { background: var(--bg-input); height: 8px; border-radius: 4px; overflow: hidden; width: 100%; }
+        .progress-fill { height: 100%; transition: width 0.5s ease; border-radius: 4px; }
+
+        /* ════════════════════════════════════════════════
+           Navigation
+           ════════════════════════════════════════════════ */
+        /* Desktop Sidebar */
+        #sidebar {
+            width: var(--sidebar-width); background: var(--bg-card);
+            border-right: 1px solid var(--separator); display: none;
+            flex-direction: column; padding: 20px;
+        }
+        
+        /* Mobile Tab Bar */
+        #tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: var(--tab-bar-height);
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-top: 1px solid var(--separator);
+            display: flex; justify-content: space-around;
+            padding-bottom: 20px; /* Safe area handled manually for alignment */
+            z-index: 1000;
+        }
+        .tab-btn {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 10px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; width: 20%;
+            padding-top: 8px; cursor: pointer;
+        }
+        .tab-btn svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+        .tab-btn.active { color: var(--blue); }
+
+        /* ════════════════════════════════════════════════
+           Modals & Overlays
+           ════════════════════════════════════════════════ */
+        .sheet-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 2000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s; backdrop-filter: blur(2px);
+        }
+        .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        .sheet-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            max-height: 90vh; background: var(--bg-card);
+            border-radius: 16px 16px 0 0; transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 2001; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .sheet-overlay.open .sheet-modal { transform: translateY(0); }
+        .sheet-header {
+            padding: 16px; border-bottom: 1px solid var(--separator);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .sheet-content { padding: 20px; }
+
+        /* Toast */
+        #toast-container { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 90%; max-width: 400px; }
+        .toast {
+            background: rgba(50, 50, 50, 0.9); backdrop-filter: blur(10px);
+            color: white; padding: 12px 16px; border-radius: 25px;
+            margin-bottom: 10px; display: flex; align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* ════════════════════════════════════════════════
+           Media Queries
+           ════════════════════════════════════════════════ */
+        @media (min-width: 769px) {
+            #tab-bar { display: none; }
+            #sidebar { display: flex; }
+            main { padding-bottom: 20px; }
+            .sheet-modal {
+                width: 500px; left: 50%; top: 50%; bottom: auto;
+                transform: translate(-50%, -50%) scale(0.9);
+                border-radius: 16px; max-height: 80vh;
+            }
+            .sheet-overlay.open .sheet-modal { transform: translate(-50%, -50%) scale(1); }
+            .fab { right: 40px; bottom: 40px; }
+        }
+
+        /* Confetti */
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5000; }
+        
+        /* Helpers */
+        .color-circle { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-circle.selected { border-color: white; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-need { background: rgba(10, 132, 255, 0.2); color: var(--blue); }
+        .badge-want { background: rgba(255, 159, 10, 0.2); color: var(--orange); }
+        .badge-save { background: rgba(48, 209, 88, 0.2); color: var(--green); }
+        .badge-emergency { background: rgba(255, 69, 58, 0.2); color: var(--red); }
+    </style>
+</head>
+<body>
+
+    <!-- Onboarding Overlay -->
+    <div id="onboarding-overlay" class="sheet-overlay" style="z-index: 4000; background: var(--bg-body);">
+        <div class="container" style="height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 20px;">
+            <div class="text-center">
+                <h1 style="color: var(--blue); margin-bottom: 20px;">FinanceKit</h1>
+                <p class="subtitle" id="onboarding-step-text">Let's get you set up.</p>
+            </div>
+            <div id="onboarding-content" style="margin-top: 40px;">
+                <!-- Dynamic Content injected here -->
+            </div>
+            <div style="margin-top: auto;">
+                <button class="btn" id="onboarding-next">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app">
+        <!-- Desktop Sidebar -->
+        <nav id="sidebar">
+            <h2 style="padding-left: 10px; margin-bottom: 30px;">FinanceKit</h2>
+            <button class="list-item" onclick="App.nav('dashboard')" style="border:none; border-radius: 8px;">Dashboard</button>
+            <button class="list-item" onclick="App.nav('budget')" style="border:none; border-radius: 8px;">Budget</button>
+            <button class="list-item" onclick="App.nav('expenses')" style="border:none; border-radius: 8px;">Expenses</button>
+            <button class="list-item" onclick="App.nav('calculator')" style="border:none; border-radius: 8px;">Calculator</button>
+            <button class="list-item" onclick="App.nav('goals')" style="border:none; border-radius: 8px;">Goals</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Header -->
+            <div class="flex-row" style="margin-bottom: 20px;">
+                <div>
+                    <div class="caption" id="header-date">Tuesday, 17 February</div>
+                    <h1 id="header-greeting">Good Morning</h1>
+                </div>
+                <div onclick="Settings.open()" style="cursor: pointer;">
+                    <div id="header-avatar" style="width: 40px; height: 40px; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">US</div>
+                </div>
+            </div>
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard">
+                <!-- Salary Hero -->
+                <div class="card" style="background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);">
+                    <div class="flex-row">
+                        <span class="caption">MONTHLY INCOME</span>
+                        <span class="caption" style="color: var(--blue);" onclick="Onboarding.editSalary()">Edit</span>
+                    </div>
+                    <div style="font-size: 42px; font-weight: 700; margin: 10px 0;" id="dash-salary">₹ 0.00</div>
+                    
+                    <!-- Currency Chips -->
+                    <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-top: 10px;" id="currency-chips">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Daily Limit Banner -->
+                <div class="card flex-row" style="background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.3);">
+                    <div>
+                        <div class="caption" style="color: var(--blue);">DAILY SPENDING LIMIT</div>
+                        <div id="dash-daily-limit" style="font-size: 20px; font-weight: 600;">₹ 0</div>
+                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--blue)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </div>
+
+                <!-- Breakdown Grid -->
+                <div class="grid-2">
+                    <div class="card" onclick="App.nav('budget')">
+                        <div class="caption">NEEDS</div>
+                        <h3 id="dash-needs" style="color:var(--blue)">₹0</h3>
+                        <div class="caption" id="dash-needs-pct">50%</div>
+                    </div>
+                    <div class="card" onclick="App.nav('budget')">
+                        <div class="caption">WANTS</div>
+                        <h3 id="dash-wants" style="color:var(--orange)">₹0</h3>
+                        <div class="caption" id="dash-wants-pct">30%</div>
+                    </div>
+                    <div class="card" onclick="App.nav('budget')">
+                        <div class="caption">SAVINGS</div>
+                        <h3 id="dash-savings" style="color:var(--green)">₹0</h3>
+                        <div class="caption" id="dash-savings-pct">20%</div>
+                    </div>
+                    <div class="card" onclick="App.nav('budget')">
+                        <div class="caption">EMERGENCY</div>
+                        <h3 id="dash-emergency" style="color:var(--red)">₹0</h3>
+                        <div class="caption" id="dash-emergency-pct">0%</div>
+                    </div>
+                </div>
+
+                <!-- Chart & Health -->
+                <div class="grid-2" style="grid-template-columns: 1fr;">
+                    <div class="card">
+                        <div class="caption">BUDGET ALLOCATION</div>
+                        <div style="height: 200px; position: relative;">
+                            <canvas id="dashChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="caption">FINANCIAL HEALTH</div>
+                        <div style="display: flex; align-items: center; justify-content: center; padding: 20px; position: relative;">
+                            <svg width="120" height="120" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="var(--bg-input)" stroke-width="12"/>
+                                <circle id="health-ring" cx="60" cy="60" r="54" fill="none" stroke="var(--green)" stroke-width="12"
+                                        stroke-dasharray="339.292" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition: stroke-dashoffset 1s ease;"/>
+                            </svg>
+                            <div style="position: absolute; text-align: center;">
+                                <div id="health-score" style="font-size: 32px; font-weight: 700;">95</div>
+                                <div id="health-label" class="caption">Excellent</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Advice Scroll -->
+                <div class="section-header">SMART ADVICE</div>
+                <div style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 10px;">
+                    <div class="card" style="min-width: 250px; background: #2C2C2E;" id="advice-card-1">
+                        <div class="caption">EMERGENCY FUND</div>
+                        <p style="font-size: 15px; margin: 5px 0;">Track logic pending...</p>
+                    </div>
+                    <div class="card" style="min-width: 250px; background: #2C2C2E;" id="advice-card-2">
+                         <div class="caption">INVESTMENT</div>
+                         <p style="font-size: 15px; margin: 5px 0;">Start small, grow big.</p>
+                    </div>
+                </div>
+
+                 <!-- Quote -->
+                 <div class="card text-center" style="margin-top: 10px;">
+                    <p style="font-style: italic; color: var(--text-secondary);" id="daily-quote">"Money is a tool. Used properly it makes something beautiful."</p>
+                </div>
+            </section>
+
+            <!-- TAB 2: BUDGET PLANNER -->
+            <section id="tab-budget" class="hidden">
+                <div class="card">
+                    <div class="caption">MONTHLY OVERVIEW</div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                        <span>Total Budget</span>
+                        <span id="budget-total-display">₹0</span>
+                    </div>
+                    <div class="progress-track" style="margin-top: 8px;">
+                        <div id="budget-total-bar" class="progress-fill" style="width: 0%; background: var(--blue);"></div>
+                    </div>
+                    <div class="caption text-center" style="margin-top: 5px;" id="budget-total-text">0% spent</div>
+                </div>
+
+                <div class="section-header">Categories</div>
+                <div id="categories-list">
+                    <!-- Categories injected here -->
+                </div>
+                <button class="btn btn-secondary" style="margin-top: 20px;" onclick="Budget.openAddModal()">+ Add Custom Category</button>
+            </section>
+
+            <!-- TAB 3: EXPENSES -->
+            <section id="tab-expenses" class="hidden">
+                <div class="flex-row" style="overflow-x: auto; gap: 8px; margin-bottom: 16px;">
+                    <span class="badge" style="background:var(--text-primary); color:var(--bg-body)">All</span>
+                    <span class="badge" style="background:var(--bg-input); color:var(--text-secondary)">Needs</span>
+                    <span class="badge" style="background:var(--bg-input); color:var(--text-secondary)">Wants</span>
+                </div>
+
+                <div class="card grid-2">
+                    <div>
+                        <div class="caption">SPENT THIS MONTH</div>
+                        <h3 id="exp-month-total">₹0</h3>
+                    </div>
+                    <div>
+                        <div class="caption">DAILY AVG</div>
+                        <h3 id="exp-daily-avg">₹0</h3>
+                    </div>
+                </div>
+
+                <div id="expense-list">
+                    <!-- Expenses grouped by date -->
+                </div>
+                
+                <div class="text-center" style="margin-top: 30px;">
+                    <button onclick="Expenses.exportCSV()" style="background: none; border: none; color: var(--blue);">Export Expenses to CSV</button>
+                </div>
+            </section>
+
+            <!-- TAB 4: CALCULATOR -->
+            <section id="tab-calculator" class="hidden">
+                <div class="flex-row" style="margin-bottom: 16px; background: var(--bg-input); padding: 4px; border-radius: 8px;">
+                    <button class="btn" style="height: 32px; font-size: 13px;" id="calc-tab-cash" onclick="Calc.switch('cash')">Cash</button>
+                    <button class="btn btn-secondary" style="height: 32px; font-size: 13px; background: transparent; color: var(--text-secondary);" id="calc-tab-sip" onclick="Calc.switch('sip')">SIP</button>
+                    <button class="btn btn-secondary" style="height: 32px; font-size: 13px; background: transparent; color: var(--text-secondary);" id="calc-tab-emi" onclick="Calc.switch('emi')">EMI</button>
+                </div>
+
+                <!-- Cash Counter -->
+                <div id="view-cash">
+                    <div class="card text-center">
+                        <div class="caption">TOTAL CASH</div>
+                        <h1 id="cash-total" style="color: var(--green);">₹ 0.00</h1>
+                        <button class="btn btn-secondary" style="height: 36px; margin-top: 10px;" onclick="Calc.clearCash()">Clear All</button>
+                    </div>
+                    <div id="cash-rows" class="list-group"></div>
+                </div>
+
+                <!-- SIP Calculator -->
+                <div id="view-sip" class="hidden">
+                    <div class="card">
+                        <label class="caption">Monthly Investment</label>
+                        <input type="number" id="sip-amount" placeholder="5000">
+                        <label class="caption">Annual Return (%)</label>
+                        <input type="number" id="sip-rate" placeholder="12">
+                        <label class="caption">Years</label>
+                        <input type="number" id="sip-years" placeholder="10">
+                        <button class="btn" onclick="Calc.calculateSIP()">Calculate</button>
+                    </div>
+                    <div class="card text-center hidden" id="sip-result">
+                        <div class="caption">MATURITY AMOUNT</div>
+                        <h2 style="color: var(--green);" id="sip-total">₹0</h2>
+                        <div class="caption" id="sip-invested">Invested: ₹0</div>
+                    </div>
+                </div>
+                
+                <!-- EMI Calculator -->
+                <div id="view-emi" class="hidden">
+                     <div class="card">
+                        <label class="caption">Loan Amount</label>
+                        <input type="number" id="emi-amount" placeholder="1000000">
+                        <label class="caption">Interest Rate (%)</label>
+                        <input type="number" id="emi-rate" placeholder="8.5">
+                        <label class="caption">Tenure (Months)</label>
+                        <input type="number" id="emi-months" placeholder="24">
+                        <button class="btn" onclick="Calc.calculateEMI()">Calculate</button>
+                    </div>
+                    <div class="card text-center hidden" id="emi-result">
+                        <div class="caption">MONTHLY EMI</div>
+                        <h2 style="color: var(--red);" id="emi-val">₹0</h2>
+                        <div class="caption" id="emi-total">Total Payment: ₹0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: GOALS -->
+            <section id="tab-goals" class="hidden">
+                <div class="card" style="background: linear-gradient(135deg, #BF5AF2 0%, #5E5CE6 100%);">
+                     <div class="caption" style="color: rgba(255,255,255,0.8);">TOTAL SAVED</div>
+                     <h1 id="goals-total-saved">₹0</h1>
+                </div>
+                <div id="goals-list"></div>
+            </section>
+
+        </main>
+        
+        <!-- Mobile Bottom Tab Bar -->
+        <nav id="tab-bar">
+            <button class="tab-btn active" onclick="App.nav('dashboard')" id="nav-dashboard">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                Home
+            </button>
+            <button class="tab-btn" onclick="App.nav('budget')" id="nav-budget">
+                <svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
+                Budget
+            </button>
+            <button class="tab-btn" onclick="App.nav('expenses')" id="nav-expenses">
+                <svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg>
+                Expenses
+            </button>
+            <button class="tab-btn" onclick="App.nav('calculator')" id="nav-calculator">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 16h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm6 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zM7 19H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V9h2v2z"/></svg>
+                Calc
+            </button>
+            <button class="tab-btn" onclick="App.nav('goals')" id="nav-goals">
+                <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                Goals
+            </button>
+        </nav>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab" onclick="Expenses.openAddModal()">+</div>
+
+    <!-- Modals -->
+    <div id="modal-expense" class="sheet-overlay">
+        <div class="sheet-modal">
+            <div class="sheet-header">
+                <span class="btn-icon" onclick="Expenses.closeModal()" style="font-size: 17px;">Cancel</span>
+                <h3 id="exp-modal-title">New Expense</h3>
+                <span class="btn-icon"></span>
+            </div>
+            <div class="sheet-content">
+                <input type="hidden" id="exp-input-id">
+                <div style="font-size: 34px; font-weight: 700; text-align: center; margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
+                    <span id="modal-currency-symbol" style="margin-right: 5px;">₹</span>
+                    <input type="number" id="exp-input-amount" placeholder="0" style="font-size: 34px; width: 150px; text-align: left; background: transparent; padding: 0; margin: 0; height: auto;" autofocus>
+                </div>
+                
+                <input type="text" id="exp-input-desc" placeholder="What is this for?">
+                
+                <select id="exp-input-cat">
+                    <!-- Categories -->
+                </select>
+                
+                <input type="date" id="exp-input-date">
+                
+                <button class="btn" id="exp-modal-save-btn" onclick="Expenses.save()">Add Expense</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-category" class="sheet-overlay">
+        <div class="sheet-modal">
+            <div class="sheet-header">
+                <span class="btn-icon" onclick="Budget.closeAddModal()" style="font-size: 17px;">Cancel</span>
+                <h3>New Category</h3>
+                <span class="btn-icon"></span>
+            </div>
+            <div class="sheet-content">
+                <input type="text" id="cat-input-name" placeholder="Category Name (e.g. Netflix)">
+                <input type="number" id="cat-input-budget" placeholder="Monthly Budget">
+                <select id="cat-input-type">
+                    <option value="need">Need</option>
+                    <option value="want">Want</option>
+                    <option value="saving">Saving</option>
+                </select>
+                <button class="btn" onclick="Budget.saveCategory()">Create Category</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-goal" class="sheet-overlay">
+        <div class="sheet-modal">
+            <div class="sheet-header">
+                <span class="btn-icon" onclick="Goals.closeModal()" style="font-size: 17px;">Cancel</span>
+                <h3>New Goal</h3>
+                <span class="btn-icon"></span>
+            </div>
+            <div class="sheet-content">
+                <input type="text" id="goal-input-name" placeholder="Goal Name">
+                <input type="number" id="goal-input-target" placeholder="Target Amount">
+                <input type="number" id="goal-input-current" placeholder="Currently Saved">
+                <button class="btn" onclick="Goals.save()">Create Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="sheet-overlay">
+        <div class="sheet-modal" style="height: 95vh;">
+            <div class="sheet-header">
+                <span class="btn-icon" onclick="Settings.close()" style="font-size: 17px;">Done</span>
+                <h3>Settings</h3>
+                <span class="btn-icon"></span>
+            </div>
+            <div class="sheet-content">
+                <div class="list-group">
+                     <div class="list-item">
+                        <span>Name</span>
+                        <input type="text" id="set-name" style="width: 150px; margin: 0; text-align: right; background: transparent;" onchange="Settings.saveProfile()">
+                     </div>
+                     <div class="list-item">
+                        <span>Salary Day</span>
+                        <input type="number" id="set-salary-day" style="width: 60px; margin: 0; text-align: right; background: transparent;" max="31" min="1" onchange="Settings.saveProfile()">
+                     </div>
+                </div>
+                
+                <div class="section-header">Appearance</div>
+                <div class="list-group">
+                    <div class="list-item">
+                        <span>Dark Mode</span>
+                        <input type="checkbox" class="toggle-switch" id="set-darkmode" onchange="Settings.toggleTheme()">
+                    </div>
+                </div>
+
+                <div class="section-header">Data</div>
+                <div class="list-group">
+                    <div class="list-item" onclick="Data.exportBackup()">
+                        <span style="color: var(--blue)">Export Backup (JSON)</span>
+                    </div>
+                    <div class="list-item" onclick="Data.triggerRestore()">
+                        <span style="color: var(--blue)">Restore Backup</span>
+                        <input type="file" id="restore-file" style="display: none;" onchange="Data.restoreBackup(this)">
+                    </div>
+                    <div class="list-item" onclick="Data.resetAll()">
+                        <span style="color: var(--red)">Reset All Data</span>
+                    </div>
+                </div>
+                <div class="caption text-center" style="margin-top: 20px;">v1.0.0 • FinanceKit</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+<script>
+/* ════════════════════════════════════════════════
+   🧠 LOGIC & STATE MANAGEMENT
+   ════════════════════════════════════════════════ */
+
+// 1. STATE & STORE
+const Store = {
+    data: {
+        profile: { name: "User", currency: "INR", salaryDay: 1, avatarColor: "blue" },
+        salary: { amount: 0, lastUpdated: null },
+        budgetRule: { needs: 50, wants: 30, savings: 20, emergency: 0, type: "50/30/20" },
+        categories: [],
+        expenses: [],
+        goals: [],
+        settings: { darkMode: true, onboarded: false }
+    },
+
+    init() {
+        const saved = localStorage.getItem("fk_data");
+        if (saved) {
+            try {
+                this.data = JSON.parse(saved);
+                // Schema migrations if needed would go here
+            } catch (e) {
+                console.error("Data parse error", e);
+            }
+        }
+        
+        // Initial Defaults if empty
+        if (this.data.categories.length === 0) {
+            this.seedCategories();
+        }
+    },
+
+    save() {
+        try {
+            localStorage.setItem("fk_data", JSON.stringify(this.data));
+        } catch (e) {
+            UI.toast("Storage full! Cannot save data.", "error");
+        }
+    },
+
+    seedCategories() {
+        const defaults = [
+            { id: "c1", name: "Rent/EMI", type: "need", icon: "🏠", budget: 0 },
+            { id: "c2", name: "Groceries", type: "need", icon: "🛒", budget: 0 },
+            { id: "c3", name: "Transport", type: "need", icon: "⛽", budget: 0 },
+            { id: "c4", name: "Utilities", type: "need", icon: "💡", budget: 0 },
+            { id: "c5", name: "Shopping", type: "want", icon: "🛍️", budget: 0 },
+            { id: "c6", name: "Entertainment", type: "want", icon: "🎬", budget: 0 },
+            { id: "c7", name: "Dining Out", type: "want", icon: "🍕", budget: 0 },
+            { id: "c8", name: "Investments", type: "saving", icon: "📈", budget: 0 },
+            { id: "c9", name: "Emergency Fund", type: "saving", icon: "🛡️", budget: 0 }
+        ];
+        this.data.categories = defaults;
+    }
+};
+
+// 2. UTILITIES
+const Utils = {
+    uuid: () => Date.now().toString(36) + Math.random().toString(36).substr(2),
+    
+    formatCurrency: (amount) => {
+        const curr = Store.data.profile.currency;
+        let locale = "en-US";
+        if (curr === "INR") locale = "en-IN";
+        else if (curr === "EUR") locale = "de-DE";
+        
+        const symbolMap = { "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "AED": "AED ", "JPY": "¥" };
+        
+        return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency: curr,
+            currencyDisplay: 'narrowSymbol'
+        }).format(amount).replace(curr, symbolMap[curr] || curr); // Fallback for symbol
+    },
+    
+    getCurrencySymbol: () => {
+        const map = { "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "AED": "د.إ", "JPY": "¥" };
+        return map[Store.data.profile.currency] || "$";
+    },
+
+    getDateString: (dateStr) => {
+        const d = dateStr ? new Date(dateStr) : new Date();
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+};
+
+// 3. UI HANDLERS
+const UI = {
+    charts: {},
+
+    toast(msg, type = "success") {
+        const div = document.createElement("div");
+        div.className = "toast";
+        div.innerHTML = type === "error" ? `❌ ${msg}` : `✅ ${msg}`;
+        document.getElementById("toast-container").appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    },
+
+    updateTheme() {
+        if (Store.data.settings.darkMode) {
+            document.documentElement.removeAttribute("data-theme");
+        } else {
+            document.documentElement.setAttribute("data-theme", "light");
+        }
+        document.getElementById("set-darkmode").checked = Store.data.settings.darkMode;
+    }
+};
+
+// 4. APP CONTROLLERS
+
+const App = {
+    init() {
+        Store.init();
+        UI.updateTheme();
+        
+        if (!Store.data.settings.onboarded) {
+            Onboarding.start();
+        } else {
+            this.render();
+        }
+
+        // Initialize header
+        document.getElementById("header-greeting").textContent = `Good Morning, ${Store.data.profile.name}`;
+        const today = new Date();
+        document.getElementById("header-date").textContent = today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+        
+        // Listeners
+        document.getElementById("exp-input-cat").addEventListener("change", (e) => {
+            // Check if user selected 'custom' to trigger logic if needed
+        });
+    },
+
+    nav(tab) {
+        document.querySelectorAll("main section").forEach(el => el.classList.add("hidden"));
+        document.getElementById(`tab-${tab}`).classList.remove("hidden");
+        
+        document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+        const btn = document.getElementById(`nav-${tab}`);
+        if(btn) btn.classList.add("active");
+
+        // Fab visibility
+        const fab = document.querySelector(".fab");
+        if (tab === "expenses" || tab === "goals") {
+            fab.style.display = "flex";
+        } else {
+            fab.style.display = "none";
+        }
+        
+        if (tab === "goals") {
+            fab.onclick = Goals.openModal;
+            fab.innerHTML = '🏆';
+        } else if (tab === 'expenses') {
+            fab.onclick = Expenses.openAddModal;
+            fab.innerHTML = '+';
+        }
+
+
+        if (tab === "dashboard") Dashboard.render();
+        if (tab === "budget") Budget.render();
+        if (tab === "expenses") Expenses.render();
+        if (tab === "goals") Goals.render();
+        if (tab === "calculator") Calc.render();
+    },
+
+    render() {
+        this.nav("dashboard");
+    }
+};
+
+const Dashboard = {
+    render() {
+        const salary = Store.data.salary.amount;
+        document.getElementById("dash-salary").textContent = Utils.formatCurrency(salary);
+        
+        // Render currency chips
+        const currencies = ["INR", "USD", "EUR", "GBP", "AED"];
+        const chipsContainer = document.getElementById("currency-chips");
+        chipsContainer.innerHTML = currencies.map(c => 
+            `<div onclick="Settings.setCurrency('${c}')" style="padding: 4px 12px; background: ${Store.data.profile.currency === c ? 'var(--blue)' : 'var(--bg-input)'}; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; cursor: pointer;">${c}</div>`
+        ).join("");
+
+        // Breakdown logic
+        const rule = Store.data.budgetRule;
+        const needs = salary * (rule.needs / 100);
+        const wants = salary * (rule.wants / 100);
+        const savings = salary * (rule.savings / 100);
+        const emergency = salary * (rule.emergency / 100);
+
+        document.getElementById("dash-needs").textContent = Utils.formatCurrency(needs);
+        document.getElementById("dash-wants").textContent = Utils.formatCurrency(wants);
+        document.getElementById("dash-savings").textContent = Utils.formatCurrency(savings);
+        document.getElementById("dash-emergency").textContent = Utils.formatCurrency(emergency);
+
+        document.getElementById("dash-needs-pct").textContent = rule.needs + "%";
+        document.getElementById("dash-wants-pct").textContent = rule.wants + "%";
+        document.getElementById("dash-savings-pct").textContent = rule.savings + "%";
+        document.getElementById("dash-emergency-pct").textContent = rule.emergency + "%";
+
+        // Daily Limit
+        const daily = (needs + wants) / 30;
+        document.getElementById("dash-daily-limit").textContent = Utils.formatCurrency(daily);
+
+        // Chart
+        this.renderChart(needs, wants, savings, emergency);
+
+        // Health Score (Mock logic for brevity)
+        const score = Math.min(100, Math.floor((savings / (salary || 1)) * 200) + 40); 
+        document.getElementById("health-score").textContent = score;
+        const ring = document.getElementById("health-ring");
+        const offset = 339.292 * (1 - score / 100);
+        ring.style.strokeDashoffset = offset;
+        
+        if(score < 50) { ring.style.stroke = "var(--red)"; document.getElementById("health-label").textContent = "Needs Attention"; }
+        else if(score < 80) { ring.style.stroke = "var(--orange)"; document.getElementById("health-label").textContent = "Good"; }
+        else { ring.style.stroke = "var(--green)"; document.getElementById("health-label").textContent = "Excellent"; }
+    },
+
+    renderChart(n, w, s, e) {
+        const ctx = document.getElementById('dashChart').getContext('2d');
+        if (UI.charts.dash) UI.charts.dash.destroy();
+        
+        UI.charts.dash = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Needs', 'Wants', 'Savings', 'Emergency'],
+                datasets: [{
+                    data: [n, w, s, e],
+                    backgroundColor: ['#0A84FF', '#FF9F0A', '#30D158', '#FF453A'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                cutout: '70%',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+};
+
+const Budget = {
+    render() {
+        // Calculate allocated budget
+        const totalAllocated = Store.data.categories.reduce((sum, cat) => sum + Number(cat.budget), 0);
+        const salary = Store.data.salary.amount;
+        
+        document.getElementById("budget-total-display").textContent = Utils.formatCurrency(totalAllocated) + " of " + Utils.formatCurrency(salary);
+        const pct = Math.min(100, (totalAllocated / salary) * 100) || 0;
+        document.getElementById("budget-total-bar").style.width = pct + "%";
+        document.getElementById("budget-total-text").textContent = pct.toFixed(0) + "% allocated";
+
+        // Render list
+        const list = document.getElementById("categories-list");
+        list.innerHTML = "";
+        
+        const groups = { need: [], want: [], saving: [], emergency: [] };
+        Store.data.categories.forEach(cat => {
+            if(groups[cat.type]) groups[cat.type].push(cat);
+        });
+
+        const typeLabels = { need: "Needs", want: "Wants", saving: "Savings", emergency: "Emergency" };
+
+        Object.keys(groups).forEach(type => {
+            if (groups[type].length === 0) return;
+            
+            const header = document.createElement("div");
+            header.className = "section-header";
+            header.textContent = typeLabels[type];
+            list.appendChild(header);
+
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "list-group";
+            
+            groups[type].forEach(cat => {
+                // Calc spent
+                const spent = Store.data.expenses
+                    .filter(e => e.categoryId === cat.id && new Date(e.date).getMonth() === new Date().getMonth())
+                    .reduce((sum, e) => sum + e.amount, 0);
+                
+                const progress = Math.min(100, (spent / (cat.budget || 1)) * 100);
+                const color = progress > 100 ? "var(--red)" : "var(--blue)";
+                
+                const div = document.createElement("div");
+                div.className = "list-item";
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="flex-row">
+                             <div style="display: flex; align-items: center; flex: 1;">
+                                <span style="font-size: 20px; margin-right: 12px;">${cat.icon}</span>
+                                <div style="flex:1;">
+                                    <div style="font-weight: 500;">${cat.name}</div>
+                                </div>
+                            </div>
+                            <button class="btn-icon" style="color: var(--red); width: 36px; height: 36px;" onclick="Budget.delete('${cat.id}')">🗑️</button>
+                        </div>
+                         <div class="caption" style="padding-left: 32px;">${Utils.formatCurrency(spent)} of ${Utils.formatCurrency(cat.budget)}</div>
+                        <div class="progress-track" style="margin-top: 8px; height: 4px;">
+                            <div class="progress-fill" style="width: ${progress}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                `;
+                groupDiv.appendChild(div);
+            });
+            list.appendChild(groupDiv);
+        });
+    },
+    
+    delete(id) {
+        if (confirm("Are you sure you want to delete this category?")) {
+            Store.data.categories = Store.data.categories.filter(c => c.id !== id);
+            // Note: This does not delete associated expenses, they will become uncategorized.
+            // To delete them too, uncomment the next line.
+            // Store.data.expenses = Store.data.expenses.filter(e => e.categoryId !== id);
+            Store.save();
+            this.render();
+            UI.toast("Category Deleted");
+        }
+    },
+    
+    openAddModal() { document.getElementById("modal-category").classList.add("open"); },
+    closeAddModal() { document.getElementById("modal-category").classList.remove("open"); },
+    
+    saveCategory() {
+        const name = document.getElementById("cat-input-name").value;
+        const budget = parseFloat(document.getElementById("cat-input-budget").value) || 0;
+        const type = document.getElementById("cat-input-type").value;
+        
+        if (!name) return UI.toast("Name required", "error");
+        
+        Store.data.categories.push({
+            id: Utils.uuid(),
+            name, budget, type, icon: "📁", isCustom: true
+        });
+        Store.save();
+        this.closeAddModal();
+        this.render();
+        UI.toast("Category Added");
+    }
+};
+
+const Expenses = {
+    render() {
+        const list = document.getElementById("expense-list");
+        list.innerHTML = "";
+        
+        // Calc totals
+        const currentMonth = new Date().getMonth();
+        const monthExpenses = Store.data.expenses.filter(e => new Date(e.date).getMonth() === currentMonth);
+        const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const today = new Date().getDate();
+        
+        document.getElementById("exp-month-total").textContent = Utils.formatCurrency(total);
+        document.getElementById("exp-daily-avg").textContent = Utils.formatCurrency(total / (today || 1));
+
+        // Group by Date
+        const grouped = {};
+        Store.data.expenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
+            if(!grouped[e.date]) grouped[e.date] = [];
+            grouped[e.date].push(e);
+        });
+
+        Object.keys(grouped).forEach(date => {
+            const dayHeader = document.createElement("div");
+            dayHeader.className = "section-header";
+            dayHeader.textContent = Utils.getDateString(date);
+            list.appendChild(dayHeader);
+            
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "list-group";
+            
+            grouped[date].forEach(e => {
+                const row = document.createElement("div");
+                row.className = "list-item";
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; flex: 1;">
+                        <span style="font-size: 24px; margin-right:12px;">${e.categoryIcon || '💸'}</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight:500;">${e.description || e.category}</div>
+                            <div class="caption">${e.category} • ${Utils.formatCurrency(e.amount)}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap: 0px;">
+                        <button class="btn-icon" style="width:40px; height:40px; color: var(--blue);" onclick="Expenses.openEditModal('${e.id}')">✏️</button>
+                        <button class="btn-icon" style="width:40px; height:40px; color: var(--red);" onclick="Expenses.delete('${e.id}')">🗑️</button>
+                    </div>
+                `;
+                groupDiv.appendChild(row);
+            });
+            list.appendChild(groupDiv);
+        });
+        
+        if (Store.data.expenses.length === 0) {
+            list.innerHTML = `<div class="text-center caption" style="margin-top:50px;">No expenses yet. Tap + to add one.</div>`;
+        }
+    },
+
+    openAddModal() {
+        const modal = document.getElementById("modal-expense");
+        // Reset form
+        document.getElementById("exp-input-id").value = "";
+        document.getElementById("exp-input-amount").value = "";
+        document.getElementById("exp-input-desc").value = "";
+        document.getElementById("exp-input-date").valueAsDate = new Date();
+        
+        document.getElementById("exp-modal-title").textContent = "New Expense";
+        document.getElementById("exp-modal-save-btn").textContent = "Add Expense";
+        
+        document.getElementById("modal-currency-symbol").textContent = Utils.getCurrencySymbol();
+        
+        // Populate Categories
+        const sel = document.getElementById("exp-input-cat");
+        sel.innerHTML = Store.data.categories.map(c => 
+            `<option value="${c.id}" data-name="${c.name}" data-icon="${c.icon}">${c.icon} ${c.name}</option>`
+        ).join("");
+        
+        modal.classList.add("open");
+    },
+    
+    openEditModal(id) {
+        const expense = Store.data.expenses.find(e => e.id === id);
+        if (!expense) return;
+
+        this.openAddModal(); // Reuse to open and populate categories
+
+        document.getElementById("exp-modal-title").textContent = "Edit Expense";
+        document.getElementById("exp-modal-save-btn").textContent = "Save Changes";
+
+        document.getElementById("exp-input-id").value = expense.id;
+        document.getElementById("exp-input-amount").value = expense.amount;
+        document.getElementById("exp-input-desc").value = expense.description;
+        document.getElementById("exp-input-cat").value = expense.categoryId;
+        document.getElementById("exp-input-date").value = expense.date;
+    },
+    
+    closeModal() { document.getElementById("modal-expense").classList.remove("open"); },
+    
+    save() {
+        const id = document.getElementById("exp-input-id").value;
+        const amt = parseFloat(document.getElementById("exp-input-amount").value);
+        const desc = document.getElementById("exp-input-desc").value;
+        const catSelect = document.getElementById("exp-input-cat");
+        const date = document.getElementById("exp-input-date").value;
+        
+        if(!amt || !date) return UI.toast("Amount and Date required", "error");
+        
+        const selectedOption = catSelect.options[catSelect.selectedIndex];
+        const expenseData = {
+            amount: amt,
+            description: desc,
+            categoryId: catSelect.value,
+            category: selectedOption.dataset.name,
+            categoryIcon: selectedOption.dataset.icon,
+            date: date
+        };
+
+        if (id) { // It's an update
+            const index = Store.data.expenses.findIndex(e => e.id === id);
+            if (index > -1) {
+                Store.data.expenses[index] = { ...Store.data.expenses[index], ...expenseData };
+                UI.toast("Expense Updated");
+            }
+        } else { // It's a new one
+            Store.data.expenses.push({ id: Utils.uuid(), ...expenseData });
+            UI.toast("Expense Added");
+        }
+        
+        Store.save();
+        this.closeModal();
+        this.render();
+        Budget.render(); // Also re-render budget to update spent amounts
+    },
+    
+    delete(id) {
+        if (confirm("Are you sure you want to delete this expense?")) {
+            Store.data.expenses = Store.data.expenses.filter(e => e.id !== id);
+            Store.save();
+            this.render();
+            Budget.render(); // Also re-render budget to update spent amounts
+            UI.toast("Expense Deleted");
+        }
+    },
+    
+    exportCSV() {
+        let csv = "Date,Description,Category,Amount\n";
+        Store.data.expenses.forEach(e => {
+            csv += `${e.date},${e.description},${e.category},${e.amount}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    }
+};
+
+const Goals = {
+    render() {
+        const list = document.getElementById("goals-list");
+        list.innerHTML = "";
+        
+        const totalSaved = Store.data.goals.reduce((s, g) => s + Number(g.saved), 0);
+        document.getElementById("goals-total-saved").textContent = Utils.formatCurrency(totalSaved);
+
+        Store.data.goals.forEach(g => {
+            const pct = Math.min(100, (g.saved / g.target) * 100);
+            
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerHTML = `
+                <div class="flex-row">
+                    <h3>${g.icon || '🎯'} ${g.name}</h3>
+                    <span class="badge" style="background: var(--bg-input); color: white;">${pct.toFixed(0)}%</span>
+                </div>
+                <div class="progress-track" style="margin: 12px 0;">
+                    <div class="progress-fill" style="width: ${pct}%; background: linear-gradient(90deg, #30D158, #34C759);"></div>
+                </div>
+                <div class="flex-row caption">
+                    <span>${Utils.formatCurrency(g.saved)} saved</span>
+                    <span>Target: ${Utils.formatCurrency(g.target)}</span>
+                </div>
+                <div style="margin-top:10px; display:flex; gap:10px;">
+                     <button class="btn" style="height:36px; font-size:13px;" onclick="Goals.addFunds('${g.id}')">+ Add Funds</button>
+                     <button class="btn btn-danger" style="height:36px; width:40px;" onclick="Goals.delete('${g.id}')">🗑</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        
+        if(Store.data.goals.length === 0) {
+             list.innerHTML = `<button class="btn" onclick="document.getElementById('modal-goal').classList.add('open')">+ Create Your First Goal</button>`;
+        } else {
+             const addBtn = document.createElement("button");
+             addBtn.className = "btn btn-secondary";
+             addBtn.innerText = "+ Add New Goal";
+             addBtn.style.marginTop = "20px";
+             addBtn.onclick = () => document.getElementById('modal-goal').classList.add('open');
+             list.appendChild(addBtn);
+        }
+    },
+    
+    openModal() { document.getElementById('modal-goal').classList.add('open'); },
+    closeModal() { document.getElementById("modal-goal").classList.remove("open"); },
+    
+    save() {
+        const name = document.getElementById("goal-input-name").value;
+        const target = parseFloat(document.getElementById("goal-input-target").value);
+        const saved = parseFloat(document.getElementById("goal-input-current").value) || 0;
+        
+        if(!name || !target) return UI.toast("Name and Target required", "error");
+        
+        Store.data.goals.push({ id: Utils.uuid(), name, target, saved, icon: "🎯" });
+        Store.save();
+        this.closeModal();
+        this.render();
+    },
+    
+    addFunds(id) {
+        const g = Store.data.goals.find(g => g.id === id);
+        if(g) {
+            const amount = parseFloat(prompt(`Add funds to ${g.name}:`));
+            if(amount) {
+                g.saved += amount;
+                if(g.saved >= g.target) Confetti.start();
+                Store.save();
+                this.render();
+            }
+        }
+    },
+    
+    delete(id) {
+        if(confirm("Delete goal?")) {
+            Store.data.goals = Store.data.goals.filter(g => g.id !== id);
+            Store.save();
+            this.render();
+        }
+    }
+};
+
+const Calc = {
+    render() {
+        this.renderCash();
+    },
+    switch(view) {
+        document.getElementById("view-cash").classList.add("hidden");
+        document.getElementById("view-sip").classList.add("hidden");
+        document.getElementById("view-emi").classList.add("hidden");
+        document.getElementById(`view-${view}`).classList.remove("hidden");
+        
+        document.getElementById("calc-tab-cash").classList.replace("btn", "btn-secondary");
+        document.getElementById("calc-tab-sip").classList.replace("btn", "btn-secondary");
+        document.getElementById("calc-tab-emi").classList.replace("btn", "btn-secondary");
+        
+        // Fix style reset
+        document.getElementById("calc-tab-cash").style.color = "var(--text-secondary)";
+        document.getElementById("calc-tab-sip").style.color = "var(--text-secondary)";
+        document.getElementById("calc-tab-emi").style.color = "var(--text-secondary)";
+        
+        const activeBtn = document.getElementById(`calc-tab-${view}`);
+        activeBtn.classList.replace("btn-secondary", "btn");
+        activeBtn.style.color = "white";
+        activeBtn.style.background = "var(--bg-card-secondary)"; // iOS segment style usually
+        // Actually revert to blue for active
+        activeBtn.style.background = "var(--blue)";
+    },
+    
+    renderCash() {
+        const container = document.getElementById("cash-rows");
+        if(container.innerHTML !== "") return; // Don't re-render if inputs exist
+        
+        const curr = Store.data.profile.currency;
+        let denoms = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1]; // INR default
+        if (curr === "USD") denoms = [100, 50, 20, 10, 5, 1, 0.25, 0.10, 0.05, 0.01];
+        if (curr === "EUR") denoms = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.20, 0.10];
+        
+        container.innerHTML = denoms.map(val => `
+            <div class="list-item">
+                <span style="width: 80px; font-weight: 500;">${Utils.getCurrencySymbol()} ${val < 1 ? (val*100).toFixed(0)+'c' : val}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-icon" style="width: 36px; height: 36px; background: var(--bg-input); border-radius: 8px;" onclick="Calc.adjustCashCount(this, -1)">-</button>
+                    <input type="number" class="cash-input" data-val="${val}" placeholder="0" style="margin:0; width:60px; text-align:center;" oninput="Calc.calcCashTotal()">
+                    <button class="btn-icon" style="width: 36px; height: 36px; background: var(--bg-input); border-radius: 8px;" onclick="Calc.adjustCashCount(this, 1)">+</button>
+                </div>
+                <span class="cash-subtotal" style="width: 100px; text-align:right; color:var(--text-secondary);">0</span>
+            </div>
+        `).join("");
+    },
+    
+    adjustCashCount(btn, amount) {
+        const input = btn.parentElement.querySelector(".cash-input");
+        let currentValue = parseInt(input.value) || 0;
+        let newValue = currentValue + amount;
+        
+        if (newValue < 0) {
+            newValue = 0;
+        }
+        
+        input.value = newValue;
+        this.calcCashTotal();
+    },
+    
+    calcCashTotal() {
+        let total = 0;
+        document.querySelectorAll(".cash-input").forEach(input => {
+            const count = parseFloat(input.value) || 0;
+            const val = parseFloat(input.dataset.val);
+            const sub = count * val;
+            total += sub;
+            input.parentElement.parentElement.querySelector(".cash-subtotal").textContent = sub.toFixed(2);
+        });
+        document.getElementById("cash-total").textContent = Utils.formatCurrency(total);
+    },
+    
+    clearCash() {
+        document.querySelectorAll(".cash-input").forEach(i => i.value = "");
+        this.calcCashTotal();
+    },
+
+    calculateSIP() {
+        const p = parseFloat(document.getElementById("sip-amount").value);
+        const r = parseFloat(document.getElementById("sip-rate").value) / 100 / 12;
+        const n = parseFloat(document.getElementById("sip-years").value) * 12;
+        
+        if(!p || !r || !n) return;
+        
+        const fv = p * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+        const invested = p * n;
+        
+        document.getElementById("sip-result").classList.remove("hidden");
+        document.getElementById("sip-total").textContent = Utils.formatCurrency(fv);
+        document.getElementById("sip-invested").textContent = `Invested: ${Utils.formatCurrency(invested)}`;
+    },
+    
+    calculateEMI() {
+        const p = parseFloat(document.getElementById("emi-amount").value);
+        const r = parseFloat(document.getElementById("emi-rate").value) / 12 / 100;
+        const n = parseFloat(document.getElementById("emi-months").value);
+        
+        if(!p || !r || !n) return;
+        
+        const emi = p * r * Math.pow(1+r, n) / (Math.pow(1+r, n) - 1);
+        
+        document.getElementById("emi-result").classList.remove("hidden");
+        document.getElementById("emi-val").textContent = Utils.formatCurrency(emi);
+        document.getElementById("emi-total").textContent = `Total: ${Utils.formatCurrency(emi * n)}`;
+    }
+};
+
+const Settings = {
+    open() {
+        document.getElementById("modal-settings").classList.add("open");
+        document.getElementById("set-name").value = Store.data.profile.name;
+        document.getElementById("set-salary-day").value = Store.data.profile.salaryDay;
+        document.getElementById("set-darkmode").checked = Store.data.settings.darkMode;
+    },
+    close() { document.getElementById("modal-settings").classList.remove("open"); },
+    
+    saveProfile() {
+        Store.data.profile.name = document.getElementById("set-name").value;
+        Store.data.profile.salaryDay = document.getElementById("set-salary-day").value;
+        Store.save();
+        document.getElementById("header-greeting").textContent = `Good Morning, ${Store.data.profile.name}`;
+    },
+    
+    toggleTheme() {
+        Store.data.settings.darkMode = document.getElementById("set-darkmode").checked;
+        Store.save();
+        UI.updateTheme();
+    },
+
+    setCurrency(c) {
+        Store.data.profile.currency = c;
+        Store.save();
+        App.render();
+        Dashboard.render(); // Re-render to update symbols
+    }
+};
+
+const Data = {
+    exportBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(Store.data));
+        const a = document.createElement('a');
+        a.href = dataStr;
+        a.download = `financekit-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        UI.toast("Backup Exported");
+    },
+    
+    triggerRestore() { document.getElementById("restore-file").click(); },
+    
+    restoreBackup(input) {
+        const file = input.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target.result);
+                if(json.profile) {
+                    Store.data = json;
+                    Store.save();
+                    location.reload();
+                } else {
+                    throw new Error("Invalid Format");
+                }
+            } catch(err) {
+                UI.toast("Invalid Backup File", "error");
+            }
+        };
+        reader.readAsText(file);
+    },
+    
+    resetAll() {
+        if(confirm("Permanently delete ALL data? This cannot be undone.")) {
+            localStorage.removeItem("fk_data");
+            location.reload();
+        }
+    }
+};
+
+// 5. ONBOARDING WIZARD
+const Onboarding = {
+    start() {
+        document.getElementById("onboarding-overlay").classList.add("open");
+        this.step = 0;
+        this.renderStep();
+        
+        document.getElementById("onboarding-next").onclick = () => {
+            if (this.validateStep()) {
+                this.step++;
+                if (this.step > 3) {
+                    this.finish();
+                } else {
+                    this.renderStep();
+                }
+            }
+        };
+    },
+
+    renderStep() {
+        const content = document.getElementById("onboarding-content");
+        if (this.step === 0) {
+            document.getElementById("onboarding-step-text").textContent = "First, what's your name?";
+            content.innerHTML = `<input type="text" id="ob-name" placeholder="Your Name" style="font-size:24px; text-align:center;">`;
+        } else if (this.step === 1) {
+            document.getElementById("onboarding-step-text").textContent = "Select your currency";
+            content.innerHTML = `
+                <div class="flex-row" style="justify-content:center; gap:10px;">
+                    <button class="btn btn-secondary" style="width:auto" onclick="Onboarding.setCurr('INR')">₹ INR</button>
+                    <button class="btn btn-secondary" style="width:auto" onclick="Onboarding.setCurr('USD')">$ USD</button>
+                    <button class="btn btn-secondary" style="width:auto" onclick="Onboarding.setCurr('EUR')">€ EUR</button>
+                </div>
+            `;
+        } else if (this.step === 2) {
+            document.getElementById("onboarding-step-text").textContent = "What is your monthly income?";
+            content.innerHTML = `<input type="number" id="ob-salary" placeholder="0" style="font-size:24px; text-align:center;">`;
+        } else if (this.step === 3) {
+            document.getElementById("onboarding-step-text").textContent = "Choose a budget rule";
+            content.innerHTML = `
+                <div class="list-group">
+                    <div class="list-item" onclick="Onboarding.setRule('50/30/20')" style="cursor:pointer">
+                        <div><b>50/30/20</b><br><span class="caption">Needs / Wants / Savings</span></div>
+                        <span style="color:var(--blue)">Recommended</span>
+                    </div>
+                </div>
+            `;
+        }
+    },
+
+    setCurr(c) { Store.data.profile.currency = c; document.querySelectorAll(".btn-secondary").forEach(b => b.style.border = b.innerText.includes(c)?"2px solid var(--blue)":"none"); },
+    setRule(r) { Store.data.budgetRule.type = r; },
+
+    validateStep() {
+        if (this.step === 0) {
+            const name = document.getElementById("ob-name").value;
+            if(name) { Store.data.profile.name = name; return true; }
+        }
+        if (this.step === 1) return true; // Default INR set in state
+        if (this.step === 2) {
+            const sal = document.getElementById("ob-salary").value;
+            if(sal) { Store.data.salary.amount = parseFloat(sal); return true; }
+        }
+        if (this.step === 3) return true;
+        return false;
+    },
+
+    finish() {
+        Store.data.settings.onboarded = true;
+        Store.save();
+        document.getElementById("onboarding-overlay").classList.remove("open");
+        Confetti.start();
+        App.init();
+    },
+    
+    editSalary() {
+        const newSal = prompt("Enter new monthly salary:", Store.data.salary.amount);
+        if(newSal) {
+            Store.data.salary.amount = parseFloat(newSal);
+            Store.save();
+            App.render();
+        }
+    }
+};
+
+// 6. CONFETTI EFFECT (Canvas)
+const Confetti = {
+    start() {
+        const canvas = document.getElementById("confetti-canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const particles = [];
+        const colors = ['#0A84FF', '#30D158', '#FF9F0A', '#FF453A', '#BF5AF2'];
+        
+        for(let i=0; i<100; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                color: colors[Math.floor(Math.random()*colors.length)],
+                size: Math.random() * 8 + 4,
+                speed: Math.random() * 5 + 2,
+                angle: Math.random() * 6
+            });
+        }
+        
+        let iteration = 0;
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            iteration++;
+            let active = false;
+            
+            particles.forEach(p => {
+                p.y += p.speed;
+                p.x += Math.sin(p.angle);
+                p.angle += 0.1;
+                
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                
+                if(p.y < canvas.height) active = true;
+            });
+            
+            if(active && iteration < 300) requestAnimationFrame(animate);
+            else ctx.clearRect(0,0,canvas.width,canvas.height);
+        }
+        animate();
+    }
+};
+
+// BOOTSTRAP
+window.onload = () => App.init();
+
+</script>
+</body>
+</html>
